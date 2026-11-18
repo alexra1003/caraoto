@@ -3,6 +3,7 @@
 node_modules/
 .next/
 .next-build/
+.next-dev/
 out/
 coverage/
 *.tsbuildinfo
@@ -27,3 +28,4 @@ supabase/.temp/
 supabase/.branches/
 .agents/
 .codex/
+next-env.d.ts
