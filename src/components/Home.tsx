@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import Logout from "@/components/Logout";
+import RecoverPairing from "@/components/RecoverPairing";
 import { COLORS, byKey, type ColorKey } from "@/lib/colors";
 import { createClient } from "@/lib/supabase/client";
 
@@ -152,6 +153,7 @@ export default function Home({
           .on("postgres_changes", { event: "INSERT", schema: "public", table: "current_status", filter }, scheduleRefresh)
           .on("postgres_changes", { event: "UPDATE", schema: "public", table: "current_status", filter }, scheduleRefresh)
           .on("postgres_changes", { event: "INSERT", schema: "public", table: "couple_members", filter }, scheduleRefresh)
+          .on("postgres_changes", { event: "UPDATE", schema: "public", table: "couple_members", filter }, scheduleRefresh)
           .subscribe((status) => {
             if (stopped) return;
             connected = status === "SUBSCRIBED";
@@ -260,7 +262,10 @@ export default function Home({
           {partnerStatus
             ? <EmotionDetails emotion={partnerStatus} time={partnerStatus.updated_at} localTime={localTime} />
             : <p>Aún no ha elegido un color.</p>}
-        </> : <Invitation />}
+        </> : <>
+          <Invitation />
+          <RecoverPairing coupleId={coupleId} />
+        </>}
       </section>
       <History title="Mi historial emocional" entries={ownHistory} older={ownOlder} latest={ownLatest} localTime={localTime} />
       <History title="Nuestro historial compartido" entries={sharedHistory} older={sharedOlder} latest={sharedLatest} localTime={localTime}
@@ -268,4 +273,3 @@ export default function Home({
     </div>
   );
 }
-

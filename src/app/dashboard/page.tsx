@@ -21,30 +21,29 @@ export default async function Dashboard({
   const params = await searchParams;
   const ownCursor = cursor(params.mi);
   const sharedCursor = cursor(params.compartido);
+  const members = await sb.from("couple_members").select("user_id").eq("couple_id", coupleId);
+  if (members.error || !members.data.some((member) => member.user_id === user.id)) {
+    throw new Error("No se pudo cargar el espacio de pareja.");
+  }
+  const memberIds = members.data.map((member) => member.user_id);
   const historyQuery = () => sb.from("status_history")
     .select("entry:id::text, user_id, color, note, created_at")
-    .eq("couple_id", coupleId)
     .order("id", { ascending: false })
     .limit(pageSize + 1);
   const own = historyQuery().eq("user_id", user.id);
-  const shared = historyQuery();
+  const shared = historyQuery().in("user_id", memberIds);
 
-  const [members, statuses, ownHistory, sharedHistory] = await Promise.all([
-    sb.from("couple_members").select("user_id").eq("couple_id", coupleId),
+  const [statuses, ownHistory, sharedHistory, profiles] = await Promise.all([
     sb.from("current_status").select("user_id, color, note, updated_at").eq("couple_id", coupleId),
     ownCursor ? own.lt("id", ownCursor) : own,
     sharedCursor ? shared.lt("id", sharedCursor) : shared,
+    sb.from("profiles").select("id, display_name").in("id", memberIds),
   ]);
 
-  if (members.error || statuses.error || ownHistory.error || sharedHistory.error ||
-      !members.data.some((member) => member.user_id === user.id)) {
+  if (statuses.error || ownHistory.error || sharedHistory.error || profiles.error) {
     throw new Error("No se pudo cargar el espacio de pareja.");
   }
 
-  // Resolve profiles with their own typed query instead of assuming an embedded relation shape.
-  const profiles = await sb.from("profiles").select("id, display_name")
-    .in("id", members.data.map((member) => member.user_id));
-  if (profiles.error) throw new Error("No se pudieron cargar los perfiles.");
   const names = new Map(profiles.data.map((profile) => [profile.id, profile.display_name]));
 
   function historyLink(key: "mi" | "compartido", next?: string) {
@@ -56,7 +55,7 @@ export default async function Dashboard({
   }
 
   return (
-    <Home key={user.id} me={user.id} coupleId={coupleId}
+    <Home key={coupleId} me={user.id} coupleId={coupleId}
       people={members.data.map(({ user_id }) => ({ id: user_id, name: names.get(user_id) ?? "Mi pareja" }))}
       statuses={statuses.data}
       ownHistory={ownHistory.data.slice(0, pageSize)}
@@ -68,4 +67,3 @@ export default async function Dashboard({
     />
   );
 }
-
