@@ -14,12 +14,15 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const { data: { user } } = await supabase.auth.getUser();
-  // Protected server pages distinguish an invalid session from a temporary auth outage.
-  if (user && request.nextUrl.pathname === "/login") {
-    const redirect = NextResponse.redirect(new URL("/dashboard", request.url));
-    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+  const { data: { user }, error } = await supabase.auth.getUser();
+  const isLogin = request.nextUrl.pathname === "/login";
+  // Let protected pages handle temporary Auth failures and membership checks.
+  const sessionMissing = !user && (!error || error.name === "AuthSessionMissingError");
+  const destination = isLogin && user ? "/pairing" : !isLogin && sessionMissing ? "/login" : null;
+  if (destination) {
+    const redirect = NextResponse.redirect(new URL(destination, request.url));
     redirect.headers.set("Cache-Control", "private, no-store");
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
     return redirect;
   }
   response.headers.set("Cache-Control", "private, no-store");
@@ -27,4 +30,3 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = { matcher: ["/dashboard", "/pairing", "/login"] };
-

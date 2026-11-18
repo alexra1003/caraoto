@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return redirect("/dashboard");
+    if (!error) return redirect("/pairing");
   }
   return redirect("/login?confirmacion=error");
 }

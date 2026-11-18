@@ -36,7 +36,7 @@ export default function LoginForm({ confirmationError }: { confirmationError: bo
       else if (error.code === "weak_password") setError("Elige una contraseña más segura.");
       else setError(signingUp ? "No se pudo crear la cuenta. Revisa tus datos e inténtalo de nuevo." : "No se pudo iniciar sesión. Inténtalo de nuevo.");
     } else if (data.session) {
-      window.location.replace("/dashboard");
+      window.location.replace("/pairing");
       return;
     } else {
       setNotice("Revisa tu correo y abre el enlace de confirmación en este navegador.");
